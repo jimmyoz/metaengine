@@ -7,7 +7,6 @@ package chequebook
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,10 +20,6 @@ import (
 	"github.com/yanhuangpai/voyager/pkg/settlement/swap/erc20"
 	"github.com/yanhuangpai/voyager/pkg/settlement/swap/transaction"
 	"github.com/yanhuangpai/voyager/pkg/storage"
-
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
@@ -82,7 +77,7 @@ func checkBalance(
 			} else {
 				logger.Warningf("cannot continue until there is at least %d IFI available on %x", neededERC20, overlayEthAddress)
 			}
-			if chainId == 18888 {
+			if chainId == 16666 {
 				if !ifSentIFIE {
 					logger.Infof("Sending IFIE to your address %x from faucet ...", overlayEthAddress)
 
@@ -163,7 +158,6 @@ func Init(
 		if err == storage.ErrNotFound {
 			logger.Info("no chequebook found, deploying new one.")
 			//	if swapInitialDeposit.Cmp(big.NewInt(0)) != 0 {
-			sendIFIE(overlayEthAddress, logger)
 			err = checkBalance(ctx, logger, swapInitialDeposit, swapBackend, chainId, overlayEthAddress, erc20Service)
 			if err != nil {
 				return nil, err
@@ -251,8 +245,8 @@ func registerNode(
 	ip, err := consensus.ExternalIP()
 	if err != nil {
 		return err
-	}
-	url := "http://112.35.192.13:8081/irc20/register_node" //东京 3.112.234.88
+ }
+	 url := "http://112.35.192.13:8081/irc20/register_node" //东京 3.112.234.88
 	song := make(map[string]interface{})
 	song["owner_address"] = overlayEthAddress
 	song["chequebook_address"] = chequebookAddress
@@ -273,57 +267,4 @@ func registerNode(
 	body, _ := ioutil.ReadAll(res.Body)
 	fmt.Println(string(body))
 	return nil
-}
-func sendIFIE(toAddress common.Address, logger logging.Logger) {
-
-	client, err := ethclient.Dial("http://112.35.181.215:8545")
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	privateKey, err := crypto.HexToECDSA("3cb06c873eb720765285c0852ea94125d591b4d678646f6fb7d1297f9cda65d2")
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		logger.Warningf("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	value := big.NewInt(1000000000000000000) // in wei (1 eth)
-	gasLimit := uint64(21000)                // in units
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	//  toAddress := common.HexToAddress("0xfCd9eA27D998113e844D079ce60ECD527A694598")
-	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-
-	chainID, err := client.NetworkID(context.Background())
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	err = client.SendTransaction(context.Background(), signedTx)
-	if err != nil {
-		logger.Warningf(err.Error())
-	}
-
-	logger.Infof("tx sent IFIE successfully: %s", signedTx.Hash().Hex())
-
 }

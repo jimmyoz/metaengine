@@ -5,14 +5,16 @@
 package main
 
 import (
-	"os"
+		"fmt"
+			"os"
 
-	"github.com/yanhuangpai/voyager/cmd/voyager/cmd"
-)
+				"github.com/yanhuangpai/voyager/cmd/voyager/cmd"
+			)
 
-func main() {
-	if err := cmd.Execute(); err != nil {
-		println(os.Stderr, "Error:", err.Error())
-		os.Exit(1)
-	}
-}
+			func main() {
+					if err := cmd.Execute(); err != nil {
+								fmt.Fprintln(os.Stderr, "Error:", err)
+										os.Exit(1)
+											}
+										}
+

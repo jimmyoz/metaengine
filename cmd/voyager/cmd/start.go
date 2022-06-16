@@ -93,7 +93,7 @@ func (c *command) initStartCmd() (err error) {
 			}
 
 			voyagerASCII := `
-Welcome to the Infinity.... 
+Welcome to the MetaEngine.... 
 <*)))))><
 <*)))))><
 <*)))))>< `
